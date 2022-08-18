@@ -1,0 +1,35 @@
+﻿Server:
+  RunMode: debug
+  # RunMode: release
+  HttpPort: 9000
+  ReadTimeout: 60
+  WriteTimeout: 60
+General:
+  LogSavePath: storage/logs
+  LogFileName: log
+  LogFileExt: .log
+  LogMaxSize: 60
+  LogMaxAge: 7
+  MaxThreads: 30
+  MaxTasks: 30
+  # 定时任务规则：秒/分/时/日/月/星期（cron）
+  # 每天0-23时每隔10秒执行一次任务
+  # 获取患者数据(定时任务)
+  GetDataCronSpec: "*/60 * 0-23 * * ?"
+  # 删除患者表中的处理后的数据（定时任务）
+  DelDataCronSpec: "*/10 * 0-23 * * ?"
+Database:
+  # 呼叫系统的数据库连接
+  DBConn: root:111111@tcp(127.0.0.1:3306)/queue_call?charset=utf8
+  # DBConn: hrp:asdf@123@tcp(10.110.20.133:30664)/espacs?charset=utf8  
+  DBType: mysql
+  MaxIdleConns: 100
+  MaxOpenConns: 100
+  MaxLifetime: 60
+  # 获取患者数据的数据库连接
+  OtherDBConn: espacs:espacs@2017@tcp(10.20.32.212:31967)/espacs?charset=utf8
+Object:
+  # 生成语音文件程序路径
+  TTSPath: D:\\Go_Work\\src\\WowjoyProject\\WowjoyQueueCall\\TTS\\TTSCfg.exe
+  # WAV文件路径(共享路径)
+  WAVFilePath: C:\\Users\\ZSH\\Desktop\\WowjoyQueueCall\\WAVFile

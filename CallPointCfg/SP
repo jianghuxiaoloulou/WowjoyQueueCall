@@ -1,0 +1,13 @@
+[DB]
+SVR_NAME=127.0.0.1
+DB_NAME=queue_call
+DB_USER_NAME=root
+DB_USER_PASS=111111
+NTAuthentication=0
+CON_DB_MODE=0
+DB_TYPE=3
+//  测试数据库
+//  Driver=MySQL ODBC 5.3 ANSI Driver;Server=10.110.20.133;port=30664;Database=espacs;User=hrp;Password=asdf@123;
+//  生产数据库
+//  Driver=MySQL ODBC 5.3 ANSI Driver;Server=10.42.1.212;port=31967;Database=ESPACS;User=espacs;Password=espacs@2017;
+CON_DB_STR=Driver=MySQL ODBC 5.3 ANSI Driver;Server=127.0.0.1;port=3306;Database=queue_call;User=root;Password=111111;
