@@ -10,7 +10,7 @@ func InsertPatientInfo(data *global.Patient_Info) (int64, error) {
 	sql := `INSERT INTO patient_info (call_status_name,check_number,patient_name,brdah,patient_sex,patient_age,patient_birthday,
 		queue_number,machine_room,type_name,call_status_code,check_items,check_type,check_body,report_status,sign_time,call_time,call_number)
 	VALUES (?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?,?);`
-	res, err := global.WriteDBEngine.Exec(sql, data.Call_Status_Name, data.Check_Number, data.Patient_Name, data.Brdah, data.Patient_Sex, data.Patient_Age, data.Patient_Birthday,
+	res, err := global.QueueCAllDBEngine.Exec(sql, data.Call_Status_Name, data.Check_Number, data.Patient_Name, data.Brdah, data.Patient_Sex, data.Patient_Age, data.Patient_Birthday,
 		data.Queue_Number, data.Machine_Room, data.Type_Name, data.Call_Status_Code, data.Check_Items, data.Check_Type, data.Check_Body, data.Report_Status, data.Sign_Time,
 		data.Call_Time, data.Call_Number)
 	if err != nil {
@@ -24,7 +24,7 @@ func InsertPatientInfo(data *global.Patient_Info) (int64, error) {
 func DeletePatientInfo(day int) error {
 	global.Logger.Info("***删除patient_info 数据***")
 	sql := `DELETE FROM patient_info pai WHERE (TIMESTAMPDIFF(DAY,pai.update_time,NOW())) < ?;`
-	_, err := global.WriteDBEngine.Exec(sql, day)
+	_, err := global.QueueCAllDBEngine.Exec(sql, day)
 	if err != nil {
 		return err
 	}
@@ -39,8 +39,8 @@ func QueryPatientInfo(checkNumber string) (*global.Patient_Info, error) {
 	pai.sign_time,pai.call_time,pai.patient_birthday,pai.machine_room,pai.call_status_code,
 	pai.call_number,pai.check_type,pai.report_status
 	FROM patient_info pai WHERE pai.check_number =?;`
-	row := global.ReadDBEngine.QueryRow(sql, checkNumber)
-	patientinfo := global.Patient_Info{}
+	row := global.QueueCAllDBEngine.QueryRow(sql, checkNumber)
+	patientinfo := global.PatientInfoData{}
 	err := row.Scan(&patientinfo.Call_Status_Name, &patientinfo.Queue_Number, &patientinfo.Patient_Name, &patientinfo.Brdah,
 		&patientinfo.Patient_Sex, &patientinfo.Patient_Age, &patientinfo.Type_Name, &patientinfo.Check_Body, &patientinfo.Check_Items, &patientinfo.Check_Number,
 		&patientinfo.Sign_Time, &patientinfo.Call_Time, &patientinfo.Patient_Birthday, &patientinfo.Machine_Room, &patientinfo.Call_Status_Code,
@@ -49,14 +49,34 @@ func QueryPatientInfo(checkNumber string) (*global.Patient_Info, error) {
 		global.Logger.Error(err)
 		return nil, err
 	}
-	return &patientinfo, nil
+	data := global.Patient_Info{
+		Call_Status_Name: patientinfo.Call_Status_Name.String,
+		Check_Number:     patientinfo.Check_Number.String,
+		Patient_Name:     patientinfo.Patient_Name.String,
+		Brdah:            patientinfo.Brdah.String,
+		Patient_Sex:      patientinfo.Patient_Sex.String,
+		Patient_Age:      patientinfo.Patient_Age.String,
+		Patient_Birthday: patientinfo.Patient_Birthday.String,
+		Queue_Number:     patientinfo.Queue_Number.String,
+		Machine_Room:     patientinfo.Machine_Room.String,
+		Type_Name:        patientinfo.Type_Name.String,
+		Call_Status_Code: int(patientinfo.Call_Status_Code.Int64),
+		Check_Items:      patientinfo.Check_Items.String,
+		Check_Type:       patientinfo.Check_Type.String,
+		Check_Body:       patientinfo.Check_Body.String,
+		Report_Status:    patientinfo.Report_Status.String,
+		Sign_Time:        patientinfo.Sign_Time.String,
+		Call_Time:        patientinfo.Call_Time.String,
+		Call_Number:      int(patientinfo.Call_Number.Int64),
+	}
+	return &data, nil
 }
 
 // 插入站点信息表数据（call_point_config）
 func InsertCallPointConfig(data *global.Call_Point_Config) (int64, error) {
 	sql := `INSERT INTO call_point_config (call_point,check_type,check_room,call_number,call_text,name_status)
 	VALUES (?,?,?,?,?,?);`
-	res, err := global.WriteDBEngine.Exec(sql, data.Call_Point, data.Check_Type, data.Check_Room,
+	res, err := global.QueueCAllDBEngine.Exec(sql, data.Call_Point, data.Check_Type, data.Check_Room,
 		data.Call_Number, data.Call_Text, data.Name_Status)
 	if err != nil {
 		global.Logger.Error("call_point_config inser err: ", err)
@@ -70,7 +90,23 @@ func QueryCallPointConfig(callPoint int) (*global.Call_Point_Config, error) {
 	global.Logger.Info("***查询call_point_config 数据***: ", callPoint)
 	sql := `SELECT cp.check_room,cp.call_point,cp.check_type,cp.call_number,cp.call_text,cp.name_status
 	FROM call_point_config cp WHERE cp.call_point = ?;`
-	row := global.ReadDBEngine.QueryRow(sql, callPoint)
+	row := global.QueueCAllDBEngine.QueryRow(sql, callPoint)
+	callPingCfg := global.Call_Point_Config{}
+	err := row.Scan(&callPingCfg.Check_Room, &callPingCfg.Call_Point, &callPingCfg.Check_Type,
+		&callPingCfg.Call_Number, &callPingCfg.Call_Text, &callPingCfg.Name_Status)
+	if err != nil {
+		global.Logger.Error(err)
+		return nil, err
+	}
+	return &callPingCfg, nil
+}
+
+// 获取患者信息表中数据通过检查机房（call_point_config）
+func QueryCheckRoomConfig(checkroom string) (*global.Call_Point_Config, error) {
+	global.Logger.Info("***查询call_point_config 数据***: ", checkroom)
+	sql := `SELECT cp.check_room,cp.call_point,cp.check_type,cp.call_number,cp.call_text,cp.name_status
+	FROM call_point_config cp WHERE cp.check_room = ?;`
+	row := global.QueueCAllDBEngine.QueryRow(sql, checkroom)
 	callPingCfg := global.Call_Point_Config{}
 	err := row.Scan(&callPingCfg.Check_Room, &callPingCfg.Call_Point, &callPingCfg.Check_Type,
 		&callPingCfg.Call_Number, &callPingCfg.Call_Text, &callPingCfg.Name_Status)
@@ -92,7 +128,7 @@ func GetPatientData() {
 	WHERE fi.status = 'Arrived' 
 	LIMIT ?;`
 	// global.Logger.Debug(sql)
-	rows, err := global.ReadDBEngine.Query(sql, global.GeneralSetting.MaxTasks)
+	rows, err := global.PACSDBEngine.Query(sql, global.GeneralSetting.MaxTasks)
 	if err != nil {
 		global.Logger.Fatal("Query error: ", err)
 		return
@@ -151,7 +187,7 @@ func TransDict(tabName, keyCode string) string {
 	case "dict_sex":
 		sql = `SELECT sex_name FROM dict_sex WHERE sex_code = ?;`
 	}
-	row := global.ReadDBEngine.QueryRow(sql, keyCode)
+	row := global.QueueCAllDBEngine.QueryRow(sql, keyCode)
 	var keyName string
 	err := row.Scan(&keyName)
 	if err != nil {
@@ -165,7 +201,7 @@ func TransDict(tabName, keyCode string) string {
 func UpdatePatientCallStatus(checkNumber string, status int) error {
 	global.Logger.Info("***更新患者呼叫状态***")
 	sql := `UPDATE patient_info pai SET pai.call_status = ? WHERE pai.check_number = ?;`
-	_, err := global.WriteDBEngine.Exec(sql, status, checkNumber)
+	_, err := global.QueueCAllDBEngine.Exec(sql, status, checkNumber)
 	if err != nil {
 		return err
 	}
@@ -177,7 +213,7 @@ func GetCallPointTextData(object global.Patient_Info, num int) []global.TextCfgD
 	var textCfgList []global.TextCfgData
 	sql := `select pai.patient_name,pai.machine_room,pai.queue_number,pai.type_name,pai.check_type from patient_info pai 
 	where pai.machine_room = ? and pai.check_number != ? order by ExtractNumber(pai.queue_number) ASC limit ?;`
-	rows, err := global.ReadDBEngine.Query(sql, object.Machine_Room, object.Check_Number, num)
+	rows, err := global.QueueCAllDBEngine.Query(sql, object.Machine_Room, object.Check_Number, num)
 	if err != nil {
 		global.Logger.Fatal("Query error: ", err)
 		return textCfgList
@@ -194,4 +230,34 @@ func GetCallPointTextData(object global.Patient_Info, num int) []global.TextCfgD
 		textCfgList = append(textCfgList, key)
 	}
 	return textCfgList
+}
+
+// 获取屏幕的配置信息通过IP
+func GetScreenConfig(ip string) (screenConfig global.Screen_Config) {
+	global.Logger.Info("***查询屏幕的配置信息***: ", ip)
+	sql := `select call_point,ip,name,title,note,department,department_code,show_status,webconfig from screen_config 
+	where ip = ?;`
+	row := global.QueueCAllDBEngine.QueryRow(sql, ip)
+	err := row.Scan(&screenConfig.Call_Point, &screenConfig.IP, &screenConfig.Name, &screenConfig.Title, &screenConfig.Note,
+		&screenConfig.Department, &screenConfig.Department_Code, &screenConfig.Show_Status, &screenConfig.Webconfig)
+	if err != nil {
+		global.Logger.Error(err.Error())
+		return
+	}
+	return
+}
+
+// 获取屏幕的配置信息通过 呼叫点 (获取显示的屏幕)
+func GetScreenConfigByCallPoint(callpoint int) (screenConfig global.Screen_Config) {
+	global.Logger.Info("***查询屏幕的配置信息***: ", callpoint)
+	sql := `select call_point,ip,name,title,note,department,department_code,show_status,webconfig from screen_config 
+	where call_point = ?;`
+	row := global.QueueCAllDBEngine.QueryRow(sql, callpoint)
+	err := row.Scan(&screenConfig.Call_Point, &screenConfig.IP, &screenConfig.Name, &screenConfig.Title, &screenConfig.Note,
+		&screenConfig.Department, &screenConfig.Department_Code, &screenConfig.Show_Status, &screenConfig.Webconfig)
+	if err != nil {
+		global.Logger.Error(err.Error())
+		return
+	}
+	return
 }

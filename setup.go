@@ -5,7 +5,9 @@ import (
 	"WowjoyProject/WowjoyQueueCall/internal/model"
 	"WowjoyProject/WowjoyQueueCall/pkg/logger"
 	"WowjoyProject/WowjoyQueueCall/pkg/setting"
+	"io"
 	"log"
+	"os"
 	"time"
 
 	"gopkg.in/natefinch/lumberjack.v2"
@@ -44,18 +46,19 @@ func setupSetting() error {
 }
 
 func setupLogger() error {
-	global.Logger = logger.NewLogger(&lumberjack.Logger{
+	lunberLogger := &lumberjack.Logger{
 		Filename:  global.GeneralSetting.LogSavePath + "/" + global.GeneralSetting.LogFileName + global.GeneralSetting.LogFileExt,
 		MaxSize:   global.GeneralSetting.LogMaxSize,
 		MaxAge:    global.GeneralSetting.LogMaxAge,
 		LocalTime: true,
-	}, "", log.LstdFlags).WithCaller(2)
+	}
+	global.Logger = logger.NewLogger(io.MultiWriter(lunberLogger, os.Stdout), "", log.LstdFlags).WithCaller(2)
 	return nil
 }
 
 func setupReadDBEngine() error {
 	var err error
-	global.ReadDBEngine, err = model.NewDBEngine(global.DatabaseSetting)
+	global.QueueCAllDBEngine, err = model.NewDBEngine(global.DatabaseSetting)
 	if err != nil {
 		return err
 	}
@@ -65,7 +68,7 @@ func setupReadDBEngine() error {
 // 增加其它系统的数据库连接
 func setupWriteDBEngine() error {
 	var err error
-	global.WriteDBEngine, err = model.NewOtherDBEngine(global.DatabaseSetting)
+	global.PACSDBEngine, err = model.NewOtherDBEngine(global.DatabaseSetting)
 	if err != nil {
 		return err
 	}

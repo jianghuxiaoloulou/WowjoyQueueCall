@@ -2,6 +2,7 @@ package routers
 
 import (
 	v1 "WowjoyProject/WowjoyQueueCall/internal/routers/api/v1"
+	"WowjoyProject/WowjoyQueueCall/internal/routers/api/ws"
 
 	"github.com/gin-gonic/gin"
 )
@@ -23,6 +24,12 @@ func NewRouter() *gin.Engine {
 		apiv1.POST("/InsPatientData", v1.InsPatientData)
 		// 更新获取患者信息
 		apiv1.GET("/HandGetPatientData", v1.HandGetPatientData)
+	}
+	// websocket
+	apiws := r.Group("/api/ws")
+	{
+		apiws.GET("", ws.HandleWebSocket)
+
 	}
 	return r
 }

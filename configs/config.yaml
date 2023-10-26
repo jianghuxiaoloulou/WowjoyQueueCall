@@ -11,7 +11,7 @@ General:
   LogMaxSize: 60
   LogMaxAge: 7
   MaxThreads: 30
-  MaxTasks: 30
+  MaxTasks: 1000
   # 定时任务规则：秒/分/时/日/月/星期（cron）
   # 每天0-23时每隔10秒执行一次任务
   # 获取患者数据(定时任务)
@@ -32,4 +32,4 @@ Object:
   # 生成语音文件程序路径
   TTSPath: D:\\Go_Work\\src\\WowjoyProject\\WowjoyQueueCall\\TTS\\TTSCfg.exe
   # WAV文件路径(共享路径)
-  WAVFilePath: C:\\Users\\ZSH\\Desktop\\WowjoyQueueCall\\WAVFile
+  WAVFilePath: D:\\Go_Work\\src\\WowjoyProject\\WowjoyQueueCall\\WAVFile

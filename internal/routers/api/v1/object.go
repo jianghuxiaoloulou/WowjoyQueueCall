@@ -3,8 +3,8 @@ package v1
 import (
 	"WowjoyProject/WowjoyQueueCall/global"
 	"WowjoyProject/WowjoyQueueCall/internal/model"
+	"WowjoyProject/WowjoyQueueCall/pkg/general"
 	"WowjoyProject/WowjoyQueueCall/pkg/object"
-	"fmt"
 	"net/http"
 	"reflect"
 	"strconv"
@@ -15,21 +15,13 @@ import (
 
 // 呼叫返回文件
 func CallFile(c *gin.Context) {
-	check_number := c.PostForm("check_number")
-	call_point := c.PostForm("call_point")
-	callpoint, _ := strconv.Atoi(call_point)
-	global.Logger.Info("check_number: ", check_number, " ,call_point: ", callpoint)
-	// 获取数据库数据
-	patientInfo, err := model.QueryPatientInfo(check_number)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "患者信息没有查询到",
-			"data":    patientInfo,
-		})
-		return
-	}
-	callPointInfo, err := model.QueryCallPointConfig(callpoint)
+	reqIP := c.ClientIP()
+	global.Logger.Debug("请求的主机IP: ", reqIP)
+	var calldata global.CallData
+	c.ShouldBind(&calldata)
+	global.Logger.Debug(calldata)
+	// 查询科室配置信息
+	callPointInfo, err := model.QueryCheckRoomConfig(calldata.CurrRoom)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
@@ -38,58 +30,64 @@ func CallFile(c *gin.Context) {
 		})
 		return
 	}
-
 	// 解析站点呼叫内容信息
 	callTextList := ParsStrToList(callPointInfo.Call_Text)
 
-	call_text := ParsCallPointInfo(callTextList, *patientInfo)
+	call_text := ParsCallPointInfo(callTextList, calldata)
+	var baseWav, fileName string
 	// 2.生成wav 文件
-	if len(call_text) < 0 {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "站点呼叫内容配置为空，请配置呼叫内容",
-			"data":    callPointInfo.Call_Point,
-		})
-		return
+	if len(call_text) > 0 {
+		global.Logger.Debug("开始生成wav 文件")
+		var str string
+		// 判定呼叫次数
+		for i := 0; i < callPointInfo.Call_Number; i++ {
+			str += call_text
+			str += "   "
+		}
+		fileName = global.ObjectSetting.WAVFilePath
+		fileName += "\\"
+		fileName += calldata.CurCheckNumber
+		fileName += ".wav"
+		object.CallExeSaveWavFile(str, fileName)
+		// 语音文件转Base64编码
+		baseWav = general.File2Base64(fileName)
+		baseWav = "data: audio/wav: base64," + baseWav
 	}
-
-	var str string
-	// 判定呼叫次数
-	for i := 0; i < callPointInfo.Call_Number; i++ {
-		str += call_text
-		str += "   "
+	// 1.机房可以分配多个呼叫点
+	// 分发消息到显示端
+	// 查询机房配置的呼叫点（多呼叫点通过|*|分割符分隔）
+	callpoints := strings.Split(callPointInfo.Call_Point, "|*|")
+	var showinfolist []global.ScreenShowData
+	for _, value := range callpoints {
+		callpoint, _ := strconv.Atoi(value)
+		screenInfo := model.GetScreenConfigByCallPoint(callpoint)
+		// 通过屏幕显示类容分发消息
+		showinfo := global.ScreenShowData{
+			CurShowCallPoint:      callpoint,
+			CurShowIP:             screenInfo.IP,
+			CurShowDepartmentCode: screenInfo.Department_Code,
+			CurWavFile:            baseWav,
+			RoomInfo:              calldata,
+		}
+		showinfolist = append(showinfolist, showinfo)
 	}
-	fileName := global.ObjectSetting.WAVFilePath
-	fileName += "\\"
-	fileName += patientInfo.Check_Number
-	fileName += ".wav"
-	object.CallExeSaveWavFile(str, fileName)
+	go object.SendShowScreenInfo(showinfolist)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,
 		"message": "呼叫成功",
 		"data":    fileName,
 	})
-	return
 }
 
 // 呼叫返回数据流
 func CallStream(c *gin.Context) {
-	check_number := c.PostForm("check_number")
-	call_point := c.PostForm("call_point")
-	callpoint, _ := strconv.Atoi(call_point)
-	global.Logger.Info("check_number: ", check_number, " ,call_point: ", callpoint)
-	// 获取数据库数据
-	patientInfo, err := model.QueryPatientInfo(check_number)
-	if err != nil {
-		c.JSON(http.StatusOK, gin.H{
-			"code":    1,
-			"message": "患者信息没有查询到",
-			"data":    patientInfo,
-		})
-		return
-	}
-	callPointInfo, err := model.QueryCallPointConfig(callpoint)
+	reqIP := c.ClientIP()
+	global.Logger.Debug("请求的主机IP: ", reqIP)
+	var calldata global.CallData
+	c.ShouldBind(&calldata)
+	global.Logger.Debug(calldata)
+	callPointInfo, err := model.QueryCheckRoomConfig(calldata.CurrRoom)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
@@ -102,13 +100,13 @@ func CallStream(c *gin.Context) {
 	// 解析站点呼叫内容信息
 	callTextList := ParsStrToList(callPointInfo.Call_Text)
 
-	call_text := ParsCallPointInfo(callTextList, *patientInfo)
+	call_text := ParsCallPointInfo(callTextList, calldata)
 	// 2.生成wav 文件
-	if len(call_text) < 0 {
+	if len(call_text) == 0 {
 		c.JSON(http.StatusOK, gin.H{
 			"code":    1,
 			"message": "站点呼叫内容配置为空，请配置呼叫内容",
-			"data":    callPointInfo.Call_Point,
+			"data":    callPointInfo.Check_Room,
 		})
 		return
 	}
@@ -121,11 +119,10 @@ func CallStream(c *gin.Context) {
 	}
 	fileName := global.ObjectSetting.WAVFilePath
 	fileName += "\\"
-	fileName += patientInfo.Check_Number
+	fileName += calldata.CurCheckNumber
 	fileName += ".wav"
 	object.CallExeSaveWavFile(str, fileName)
 	c.File(fileName)
-	return
 }
 
 // 插入患者数据
@@ -161,10 +158,9 @@ func InsPatientData(c *gin.Context) {
 		"message": "患者数据插入成功",
 		"data":    "",
 	})
-	return
 }
 
-//获取结构体中字段的名称
+// // 获取结构体中字段的名称
 func GetFieldName(columnName string, object global.Patient_Info) string {
 	var val string
 	t := reflect.TypeOf(object)
@@ -172,7 +168,7 @@ func GetFieldName(columnName string, object global.Patient_Info) string {
 		t = t.Elem()
 	}
 	if t.Kind() != reflect.Struct {
-		fmt.Println("Check type error not Struct")
+		global.Logger.Debug("Check type error not Struct")
 		return ""
 	}
 	fieldNum := t.NumField()
@@ -187,92 +183,32 @@ func GetFieldName(columnName string, object global.Patient_Info) string {
 }
 
 // 解析站点信息
-func ParsCallPointInfo(callTextList []string, object global.Patient_Info) string {
-	var textcfg global.TextCfg
-	var textcfgData global.TextCfgData
-	var textcfgDataList []global.TextCfgData
-
+func ParsCallPointInfo(callTextList []string, object global.CallData) string {
+	var waitename []string
+	for _, v := range object.WaitePatienList {
+		waitename = append(waitename, v.WaitePatientName)
+	}
 	var TextStr string
-
+	var waitenum int
 	for i := 0; i < len(callTextList); i++ {
 		switch callTextList[i] {
 		case "patient_name":
-			textcfg.PateintNameCount++
+			TextStr += object.CurPatientName
 		case "machine_room":
-			textcfg.MachineRoomCount++
+			TextStr += object.CurrRoom
 		case "queue_number":
-			textcfg.QueueNumberCount++
+			TextStr += object.CurQueueNumber
 		case "type_name":
-			textcfg.TypeNameCount++
+			TextStr += object.CurTypeName
 		case "check_type":
-			textcfg.CheckTypeCount++
+			TextStr += object.CurCheckType
 		case "wait_patient":
-			textcfg.PateintNameCount++
-		}
-	}
-	if textcfg.PateintNameCount > 1 {
-		textcfgData.Patient_Name = object.Patient_Name
-		textcfgData.Machine_Room = object.Machine_Room
-		textcfgData.Queue_Number = object.Queue_Number
-		textcfgData.Type_Name = object.Type_Name
-		textcfgData.Check_Type = object.Check_Type
-		textcfgDataList = append(textcfgDataList, textcfgData)
-		dataList := model.GetCallPointTextData(object, textcfg.PateintNameCount-1)
-		textcfgDataList = append(textcfgDataList, dataList...)
-		ListLen := len(textcfgDataList)
-		var temp global.TextCfg
-		for i := 0; i < len(callTextList); i++ {
-			switch callTextList[i] {
-			case "patient_name":
-				if temp.PateintNameCount < ListLen {
-					TextStr += textcfgDataList[temp.PateintNameCount].Patient_Name
-					temp.PateintNameCount++
-				}
-			case "machine_room":
-				if temp.MachineRoomCount < ListLen {
-					TextStr += textcfgDataList[temp.MachineRoomCount].Machine_Room
-					temp.MachineRoomCount++
-				}
-			case "queue_number":
-				if temp.QueueNumberCount < ListLen {
-					TextStr += textcfgDataList[temp.QueueNumberCount].Queue_Number
-					temp.QueueNumberCount++
-				}
-			case "type_name":
-				if temp.TypeNameCount < ListLen {
-					TextStr += textcfgDataList[temp.TypeNameCount].Type_Name
-					temp.TypeNameCount++
-				}
-			case "check_type":
-				if temp.CheckTypeCount < ListLen {
-					TextStr += textcfgDataList[temp.CheckTypeCount].Check_Type
-					temp.CheckTypeCount++
-				}
-			case "wait_patient":
-				if temp.PateintNameCount < ListLen {
-					TextStr += textcfgDataList[temp.PateintNameCount].Patient_Name
-					temp.PateintNameCount++
-				}
-			default:
-				TextStr += callTextList[i]
+			if waitenum < len(waitename) {
+				TextStr += waitename[waitenum]
+				waitenum++
 			}
-		}
-	} else {
-		for i := 0; i < len(callTextList); i++ {
-			switch callTextList[i] {
-			case "patient_name":
-				TextStr += object.Patient_Name
-			case "machine_room":
-				TextStr += object.Machine_Room
-			case "queue_number":
-				TextStr += object.Queue_Number
-			case "type_name":
-				TextStr += object.Type_Name
-			case "check_type":
-				TextStr += object.Check_Type
-			default:
-				TextStr += callTextList[i]
-			}
+		default:
+			TextStr += callTextList[i]
 		}
 	}
 	return TextStr
@@ -280,7 +216,7 @@ func ParsCallPointInfo(callTextList []string, object global.Patient_Info) string
 
 // 站点字符串解析
 func ParsStrToList(callText string) (textList []string) {
-	if len(callText) < 0 {
+	if len(callText) <= 0 {
 		global.Logger.Error("呼叫内容长度小于0：", callText)
 		return textList
 	}
