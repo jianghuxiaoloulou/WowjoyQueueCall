@@ -18,7 +18,7 @@ func main() {
 	global.Logger.Info("***开始运行叫号系统服务***")
 	global.ScreenRoomTotalData = make(map[string]map[string]global.CallData)
 	// 定时获取数据
-	// go timedTask()
+	go timedTask()
 	// 启动web服务
 	web()
 }

@@ -58,6 +58,9 @@ go get -u gopkg.in/gomail.v2
 go get -u github.com/juju/ratelimit@v1.0.1
 # 统一超时控制
 
+# 构建命令
+go build -ldflags="-H windowsgui" -o .\WowjoyQueueCall\WowjoyQUeueCall.exe .\main.go .\setup.go
+
 ## 第二次相同项目提交文件到github
 # git add README.md
 # git commit -m "first commit"
@@ -65,7 +68,8 @@ go get -u github.com/juju/ratelimit@v1.0.1
 
 
 # 修改记录
-# 2023/10/26 增加前端屏幕显示端相关代码
+# 2023/11/07 语音文件通过http 获取
+# 2023/10/26 V1.0.0.1 增加前端屏幕显示端相关代码
 # 2022-04-14 开始创建项目
 
 Arrived Canceled Ordered Ready Reported Studyed

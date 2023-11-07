@@ -1,1 +1,1 @@
-start "" TTSCfg.exe 请A015102号王学兵到5号诊室就诊 C:\\Users\\ZSH\\Desktop\\12292.wav
+start "" TTSCfg.exe 请A015102号王学兵到5号诊室就诊 C:\\Users\\ZSH\\Desktop\\12292.mp3

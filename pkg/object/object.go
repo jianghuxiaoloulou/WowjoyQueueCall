@@ -26,20 +26,20 @@ func CallExeSaveWavFile(str, fileName string) bool {
 }
 
 // 分发显示信息到显示屏
-func SendShowScreenInfo(info []global.ScreenShowData) {
-	for _, value := range info {
-		switch value.CurShowDepartmentCode {
-		case global.Screen_Type_FS:
-			ShowFSScreenInfo(value)
-		case global.Screen_Type_US:
-			ShowUSScreenInfo(value)
-		case global.Screen_Type_ES:
-			ShowESScreenInfo(value)
-		case global.Screen_Type_MZ:
-			ShowMZScreenInfo(value)
-		default:
-		}
+func SendShowScreenInfo(info global.ScreenShowData) {
+	// for _, value := range info {
+	switch info.CurShowDepartmentCode {
+	case global.Screen_Type_FS:
+		ShowFSScreenInfo(info)
+	case global.Screen_Type_US:
+		ShowUSScreenInfo(info)
+	case global.Screen_Type_ES:
+		ShowESScreenInfo(info)
+	case global.Screen_Type_MZ:
+		ShowMZScreenInfo(info)
+	default:
 	}
+	// }
 }
 
 // 显示放射科屏幕信息

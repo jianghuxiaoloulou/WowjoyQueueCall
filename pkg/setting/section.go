@@ -33,6 +33,7 @@ type DatabaseSettingS struct {
 type ObjectSettingS struct {
 	TTSPath     string
 	WAVFilePath string
+	WAVURL      string
 }
 
 func (s *Setting) ReadSection(k string, v interface{}) error {

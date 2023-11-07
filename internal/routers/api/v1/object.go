@@ -3,7 +3,6 @@ package v1
 import (
 	"WowjoyProject/WowjoyQueueCall/global"
 	"WowjoyProject/WowjoyQueueCall/internal/model"
-	"WowjoyProject/WowjoyQueueCall/pkg/general"
 	"WowjoyProject/WowjoyQueueCall/pkg/object"
 	"net/http"
 	"reflect"
@@ -49,15 +48,18 @@ func CallFile(c *gin.Context) {
 		fileName += calldata.CurCheckNumber
 		fileName += ".wav"
 		object.CallExeSaveWavFile(str, fileName)
+		baseWav = global.ObjectSetting.WAVURL
+		baseWav += calldata.CurCheckNumber
+		baseWav += ".wav"
 		// 语音文件转Base64编码
-		baseWav = general.File2Base64(fileName)
-		baseWav = "data: audio/wav: base64," + baseWav
+		// baseWav = general.File2Base64(fileName)
+		// baseWav = "data: audio/wav: base64," + baseWav
 	}
 	// 1.机房可以分配多个呼叫点
 	// 分发消息到显示端
 	// 查询机房配置的呼叫点（多呼叫点通过|*|分割符分隔）
 	callpoints := strings.Split(callPointInfo.Call_Point, "|*|")
-	var showinfolist []global.ScreenShowData
+	// var showinfolist []global.ScreenShowData
 	for _, value := range callpoints {
 		callpoint, _ := strconv.Atoi(value)
 		screenInfo := model.GetScreenConfigByCallPoint(callpoint)
@@ -69,9 +71,10 @@ func CallFile(c *gin.Context) {
 			CurWavFile:            baseWav,
 			RoomInfo:              calldata,
 		}
-		showinfolist = append(showinfolist, showinfo)
+		go object.SendShowScreenInfo(showinfo)
+		// showinfolist = append(showinfolist, showinfo)
 	}
-	go object.SendShowScreenInfo(showinfolist)
+	// go object.SendShowScreenInfo(showinfolist)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,

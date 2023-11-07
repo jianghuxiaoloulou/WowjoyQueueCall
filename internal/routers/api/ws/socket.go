@@ -19,12 +19,12 @@ type Client struct {
 
 type Message struct {
 	To       string               `json:"to"`       // 接收者IP
-	MsgType  int                  `json:"msgType"`  // 数据类型 0:ws通讯信息，1:屏幕配置信息，2:叫号数据消息
+	MsgType  int                  `json:"msgType"`  // 数据类型 0:ws通讯信息，1:屏幕配置信息，2:叫号数据消息，3：WS初始化显示数据
 	DataType int                  `json:"dataType"` // 数据类型 0：放射科，1：超声科，2：内镜科，3：门诊
 	Data     global.Screen_Config `json:"data"`     // 配置信息
 }
 
-var Clients = make(map[*websocket.Conn]*Client)
+var Clients = make(map[string]*Client)
 
 // 用来升级HTTP请求
 var upgrader = websocket.Upgrader{
@@ -42,7 +42,7 @@ func checkOrigin(r *http.Request) bool {
 func (c *Client) ReadMsg() {
 	for {
 		//读取消息
-		_, _, err := c.Conn.ReadMessage()
+		_, value, err := c.Conn.ReadMessage()
 		//如果有错误信息，就注销这个连接然后关闭
 		if err != nil {
 			if websocket.IsCloseError(err, websocket.CloseNormalClosure, websocket.CloseGoingAway) {
@@ -53,41 +53,39 @@ func (c *Client) ReadMsg() {
 				global.Logger.Error("连接异常关闭:", err, "IP: ", c.IP)
 			}
 			c.Conn.Close()
-			delete(Clients, c.Conn)
+			delete(Clients, c.IP)
 			break
 		}
+		global.Logger.Debug(c.IP, " :接收到信息：", string(value))
 	}
 }
 
-func HandleWebSocket(c *gin.Context) {
-	// 升级HTTP连接为WebSocket连接
-	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
-	if err != nil {
-		global.Logger.Error("WebSocket Upgrade err ", err.Error())
-		return
-	}
-	clientip := c.ClientIP()
-	global.Logger.Debug("WebSocket连接的 IP :", clientip)
-	client := &Client{
-		Conn: conn,
-		IP:   clientip,
-	}
-	Clients[conn] = client
-	// 返回配置信息
-	data := model.GetScreenConfig(clientip)
+// 连接后发送初始信息
+func (c *Client) WriteInitMsg() {
+	// 1.发送屏幕配置信息
+	data := model.GetScreenConfig(c.IP)
 	msg := Message{
-		To:       clientip,
+		To:       c.IP,
 		MsgType:  1,
 		DataType: 0,
 		Data:     data,
 	}
-	conn.WriteJSON(msg)
+	err := c.Conn.WriteJSON(msg)
+	if err != nil {
+		global.Logger.Error("Send screen config data err: ", err)
+		c.Conn.Close()
+		delete(Clients, c.IP)
+		return
+	}
+	global.Logger.Debug("Send screen config data", msg)
+
+	// 2.发送屏幕历史数据
 	// 连接时，sleep(5s) 然后发送数据
-	time.Sleep(time.Second * 5)
+	time.Sleep(time.Second * 2)
 	switch data.Department_Code {
 	case global.Screen_Type_FS:
 		var roomlist []global.CallData
-		for _, v := range global.ScreenRoomTotalData[clientip] {
+		for _, v := range global.ScreenRoomTotalData[c.IP] {
 			roomlist = append(roomlist, v)
 		}
 		// 通过机房的位置排序
@@ -103,19 +101,43 @@ func HandleWebSocket(c *gin.Context) {
 			CheckRoomList:   roomlist,
 		}
 		initmsg := global.WSMessage{
-			To:       clientip,
+			To:       c.IP,
 			MsgType:  3,
 			DataType: global.Screen_Type_FS,
 			Data:     initdata,
 		}
-		SendMsg(initmsg)
+		err := c.Conn.WriteJSON(initmsg)
+		if err != nil {
+			global.Logger.Error("Send screen init data err: ", err)
+			delete(Clients, c.IP)
+			c.Conn.Close()
+			return
+		}
+		global.Logger.Debug("Send screen init data", msg)
 	case global.Screen_Type_US:
 	case global.Screen_Type_ES:
 	case global.Screen_Type_MZ:
 	default:
 	}
+}
+func HandleWebSocket(c *gin.Context) {
+	// 升级HTTP连接为WebSocket连接
+	conn, err := upgrader.Upgrade(c.Writer, c.Request, nil)
+	if err != nil {
+		global.Logger.Error("WebSocket Upgrade err ", err.Error())
+		return
+	}
+	clientip := c.ClientIP()
+	global.Logger.Debug("新WebSocket连接的 IP :", clientip)
+	client := &Client{
+		Conn: conn,
+		IP:   clientip,
+	}
+	Clients[clientip] = client
+
 	//启动协程收web端传过来的消息
 	go client.ReadMsg()
+	go client.WriteInitMsg()
 }
 
 // 发送消息

@@ -33,3 +33,5 @@ Object:
   TTSPath: D:\\Go_Work\\src\\WowjoyProject\\WowjoyQueueCall\\TTS\\TTSCfg.exe
   # WAV文件路径(共享路径)
   WAVFilePath: D:\\Go_Work\\src\\WowjoyProject\\WowjoyQueueCall\\WAVFile
+  # WAV http 访问地址
+  WAVURL: http://127.0.0.1:9091/WavFile/
