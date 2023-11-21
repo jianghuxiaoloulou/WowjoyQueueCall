@@ -32,11 +32,12 @@ type CallData struct {
 
 // 显示端数据
 type ScreenShowData struct {
-	CurShowCallPoint      int      `json:"CurShowCallPoint"`      // 显示屏幕的呼叫点
-	CurShowIP             string   `json:"CurShowIP"`             // 当前显示屏幕的IP
-	CurShowDepartmentCode int      `json:"CurShowDepartmentCode"` // 当前显示的科室类型
-	CurWavFile            string   `json:"CurWavFile"`            // 当前呼叫的语音文件
-	RoomInfo              CallData `json:"RoomInfo"`              // 房间显示信息
+	CurShowCallPoint      int      `json:"curShowCallPoint"`      // 显示屏幕的呼叫点
+	CurShowIP             string   `json:"curShowIP"`             // 当前显示屏幕的IP
+	CurShowSize           int      `json:"curShowSize"`           // 当前屏幕显示数据条数
+	CurShowDepartmentCode int      `json:"curShowDepartmentCode"` // 当前显示的科室类型
+	CurWavFile            string   `json:"curWavFile"`            // 当前呼叫的语音文件
+	RoomInfo              CallData `json:"roomInfo"`              // 房间显示信息
 }
 
 type WaitePatien struct {
@@ -44,7 +45,7 @@ type WaitePatien struct {
 	WaitePatientName string `json:"waitePatientName"` // 等待患者姓名
 }
 
-// 发送的放射科的WebSocket数据
+// 发送的科室的WebSocket数据
 type WSMessage struct {
 	To       string   `json:"to"`       // 接收者IP
 	MsgType  int      `json:"msgType"`  // 数据类型 0:ws通讯信息，1:屏幕配置信息，2:叫号数据消息,3:ws重连数据显示信息
@@ -60,5 +61,16 @@ type FSWSData struct {
 	CheckRoomList   []CallData `json:"checkRoomList"`   // 显示的机房数据列表
 }
 
+// 发送的门诊的WebSocket数据MZ
+type WSMZMessage struct {
+	To       string   `json:"to"`       // 接收者IP
+	MsgType  int      `json:"msgType"`  // 数据类型 0:ws通讯信息，1:屏幕配置信息，2:叫号数据消息,3:ws重连数据显示信息
+	DataType int      `json:"dataType"` // 数据类型 0：放射科，1：超声科，2：内镜科，3：门诊
+	Data     CallData `json:"data"`     // 放射科数据
+}
+
 // 屏幕中的数据 [屏幕IP][][机房]
 var ScreenRoomTotalData map[string]map[string]CallData
+
+// 超声内镜数据
+var USScreenRoomTotalData map[string][]CallData

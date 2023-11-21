@@ -235,11 +235,11 @@ func GetCallPointTextData(object global.Patient_Info, num int) []global.TextCfgD
 // 获取屏幕的配置信息通过IP
 func GetScreenConfig(ip string) (screenConfig global.Screen_Config) {
 	global.Logger.Info("***查询屏幕的配置信息***: ", ip)
-	sql := `select call_point,ip,name,title,note,department,department_code,show_status,webconfig from screen_config 
+	sql := `select call_point,ip,name,title,note,department,department_code,show_status,show_size,webconfig from screen_config 
 	where ip = ?;`
 	row := global.QueueCAllDBEngine.QueryRow(sql, ip)
 	err := row.Scan(&screenConfig.Call_Point, &screenConfig.IP, &screenConfig.Name, &screenConfig.Title, &screenConfig.Note,
-		&screenConfig.Department, &screenConfig.Department_Code, &screenConfig.Show_Status, &screenConfig.Webconfig)
+		&screenConfig.Department, &screenConfig.Department_Code, &screenConfig.Show_Status, &screenConfig.Show_Size, &screenConfig.Webconfig)
 	if err != nil {
 		global.Logger.Error(err.Error())
 		return
@@ -250,11 +250,11 @@ func GetScreenConfig(ip string) (screenConfig global.Screen_Config) {
 // 获取屏幕的配置信息通过 呼叫点 (获取显示的屏幕)
 func GetScreenConfigByCallPoint(callpoint int) (screenConfig global.Screen_Config) {
 	global.Logger.Info("***查询屏幕的配置信息***: ", callpoint)
-	sql := `select call_point,ip,name,title,note,department,department_code,show_status,webconfig from screen_config 
+	sql := `select call_point,ip,name,title,note,department,department_code,show_status,show_size,webconfig from screen_config 
 	where call_point = ?;`
 	row := global.QueueCAllDBEngine.QueryRow(sql, callpoint)
 	err := row.Scan(&screenConfig.Call_Point, &screenConfig.IP, &screenConfig.Name, &screenConfig.Title, &screenConfig.Note,
-		&screenConfig.Department, &screenConfig.Department_Code, &screenConfig.Show_Status, &screenConfig.Webconfig)
+		&screenConfig.Department, &screenConfig.Department_Code, &screenConfig.Show_Status, &screenConfig.Show_Size, &screenConfig.Webconfig)
 	if err != nil {
 		global.Logger.Error(err.Error())
 		return

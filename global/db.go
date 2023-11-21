@@ -19,6 +19,7 @@ type Screen_Config struct {
 	Department      string `db:"department"`     // 屏幕现实的科室
 	Department_Code int    `db:"departmentCode"` // 屏幕显示的科室类型 0：放射科，1：超声科，2：内镜科，3：门诊
 	Show_Status     int    `db:"showStatus"`     // 屏幕姓名显示状态 0：加密，1：不加密
+	Show_Size       int    `db:"showSize"`       // 屏幕显示的数据size(超声内镜指定屏幕显示的数据条目)
 	Webconfig       string `db:"webConfig"`      // 前端的配置字符串
 }
 
