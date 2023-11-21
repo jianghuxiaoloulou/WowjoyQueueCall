@@ -67,14 +67,13 @@ func CallFile(c *gin.Context) {
 		showinfo := global.ScreenShowData{
 			CurShowCallPoint:      callpoint,
 			CurShowIP:             screenInfo.IP,
+			CurShowSize:           screenInfo.Show_Size,
 			CurShowDepartmentCode: screenInfo.Department_Code,
 			CurWavFile:            baseWav,
 			RoomInfo:              calldata,
 		}
 		go object.SendShowScreenInfo(showinfo)
-		// showinfolist = append(showinfolist, showinfo)
 	}
-	// go object.SendShowScreenInfo(showinfolist)
 
 	c.JSON(http.StatusOK, gin.H{
 		"code":    0,

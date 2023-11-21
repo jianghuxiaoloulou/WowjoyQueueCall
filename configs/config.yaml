@@ -27,7 +27,7 @@ Database:
   MaxOpenConns: 100
   MaxLifetime: 60
   # 获取患者数据的数据库连接
-  OtherDBConn: espacs:espacs@2017@tcp(10.20.32.212:31967)/espacs?charset=utf8
+  OtherDBConn: espacs:espacs@2017@tcp(172.16.255.26:30117)/espacs?charset=utf8
 Object:
   # 生成语音文件程序路径
   TTSPath: D:\\Go_Work\\src\\WowjoyProject\\WowjoyQueueCall\\TTS\\TTSCfg.exe

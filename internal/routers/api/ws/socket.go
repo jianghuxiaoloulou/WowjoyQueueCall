@@ -115,8 +115,73 @@ func (c *Client) WriteInitMsg() {
 		}
 		global.Logger.Debug("Send screen init data", msg)
 	case global.Screen_Type_US:
+		initdata := global.FSWSData{
+			CallPatient:     "",
+			CallRoom:        "",
+			CallQueueNum:    "",
+			CallPatientType: "",
+			CallWavFile:     "",
+			CheckRoomList:   global.USScreenRoomTotalData[c.IP],
+		}
+		initmsg := global.WSMessage{
+			To:       c.IP,
+			MsgType:  3,
+			DataType: global.Screen_Type_US,
+			Data:     initdata,
+		}
+		err := c.Conn.WriteJSON(initmsg)
+		if err != nil {
+			global.Logger.Error("Send screen init data err: ", err)
+			delete(Clients, c.IP)
+			c.Conn.Close()
+			return
+		}
+		global.Logger.Debug("Send screen init data", msg)
 	case global.Screen_Type_ES:
+		initdata := global.FSWSData{
+			CallPatient:     "",
+			CallRoom:        "",
+			CallQueueNum:    "",
+			CallPatientType: "",
+			CallWavFile:     "",
+			CheckRoomList:   global.USScreenRoomTotalData[c.IP],
+		}
+		initmsg := global.WSMessage{
+			To:       c.IP,
+			MsgType:  3,
+			DataType: global.Screen_Type_ES,
+			Data:     initdata,
+		}
+		err := c.Conn.WriteJSON(initmsg)
+		if err != nil {
+			global.Logger.Error("Send screen init data err: ", err)
+			delete(Clients, c.IP)
+			c.Conn.Close()
+			return
+		}
+		global.Logger.Debug("Send screen init data", msg)
 	case global.Screen_Type_MZ:
+		initmsg := global.WSMZMessage{
+			To:       c.IP,
+			MsgType:  3,
+			DataType: global.Screen_Type_MZ,
+		}
+		for _, v := range global.ScreenRoomTotalData[c.IP] {
+			initmsg = global.WSMZMessage{
+				To:       c.IP,
+				MsgType:  3,
+				DataType: global.Screen_Type_MZ,
+				Data:     v,
+			}
+		}
+		err := c.Conn.WriteJSON(initmsg)
+		if err != nil {
+			global.Logger.Error("Send screen init data err: ", err)
+			delete(Clients, c.IP)
+			c.Conn.Close()
+			return
+		}
+		global.Logger.Debug("Send screen init data", msg)
 	default:
 	}
 }
@@ -142,6 +207,21 @@ func HandleWebSocket(c *gin.Context) {
 
 // 发送消息
 func SendMsg(msg global.WSMessage) {
+	for _, value := range Clients {
+		if value.IP == msg.To {
+			err := value.Conn.WriteJSON(msg)
+			if err != nil {
+				global.Logger.Error("websocket send msg err :", err)
+				break
+			}
+			global.Logger.Debug("websocket send msg Successful: ", msg)
+			break
+		}
+	}
+}
+
+// 发送门诊数据
+func SendMZMsg(msg global.WSMZMessage) {
 	for _, value := range Clients {
 		if value.IP == msg.To {
 			err := value.Conn.WriteJSON(msg)
