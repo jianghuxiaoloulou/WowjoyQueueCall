@@ -56,6 +56,18 @@ func setupLogger() error {
 	return nil
 }
 
+// 增加保存weblog
+func setupWebLogger() error {
+	lunberLogger := &lumberjack.Logger{
+		Filename:  global.GeneralSetting.WebLogSavePath + "/" + global.GeneralSetting.WebLogFileName + global.GeneralSetting.LogFileExt,
+		MaxSize:   global.GeneralSetting.LogMaxSize,
+		MaxAge:    global.GeneralSetting.LogMaxAge,
+		LocalTime: true,
+	}
+	global.WebLogger = logger.NewLogger(io.MultiWriter(lunberLogger, os.Stdout), "", log.LstdFlags).WithCaller(2)
+	return nil
+}
+
 func setupReadDBEngine() error {
 	var err error
 	global.QueueCAllDBEngine, err = model.NewDBEngine(global.DatabaseSetting)
@@ -83,6 +95,10 @@ func readSetup() {
 	err = setupLogger()
 	if err != nil {
 		log.Fatalf("init.setupLogger err: %v", err)
+	}
+	err = setupWebLogger()
+	if err != nil {
+		log.Fatalf("init.setupWebLogger err: %v", err)
 	}
 	err = setupReadDBEngine()
 	if err != nil {

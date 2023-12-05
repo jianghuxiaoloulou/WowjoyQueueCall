@@ -11,4 +11,5 @@ var (
 	DatabaseSetting *setting.DatabaseSettingS
 	ObjectSetting   *setting.ObjectSettingS
 	Logger          *logger.Logger
+	WebLogger       *logger.Logger
 )
