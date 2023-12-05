@@ -17,6 +17,8 @@ type GeneralSettingS struct {
 	LogMaxAge       int
 	MaxThreads      int
 	MaxTasks        int
+	WebLogSavePath  string
+	WebLogFileName  string
 	GetDataCronSpec string
 	DelDataCronSpec string
 }
@@ -34,6 +36,8 @@ type ObjectSettingS struct {
 	TTSPath     string
 	WAVFilePath string
 	WAVURL      string
+	Rate        int
+	Volume      int
 }
 
 func (s *Setting) ReadSection(k string, v interface{}) error {

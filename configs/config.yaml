@@ -10,12 +10,14 @@ General:
   LogFileExt: .log
   LogMaxSize: 60
   LogMaxAge: 7
+  WebLogSavePath: storage/weblogs
+  WebLogFileName: weblog
   MaxThreads: 30
   MaxTasks: 1000
   # 定时任务规则：秒/分/时/日/月/星期（cron）
   # 每天0-23时每隔10秒执行一次任务
   # 获取患者数据(定时任务)
-  GetDataCronSpec: "*/60 * 0-23 * * ?"
+  GetDataCronSpec: "*/20 * 0-23 * * ?"
   # 删除患者表中的处理后的数据（定时任务）
   DelDataCronSpec: "*/10 * 0-23 * * ?"
 Database:
@@ -27,11 +29,16 @@ Database:
   MaxOpenConns: 100
   MaxLifetime: 60
   # 获取患者数据的数据库连接
-  OtherDBConn: espacs:espacs@2017@tcp(172.16.255.26:30117)/espacs?charset=utf8
+  OtherDBConn: espacs:Wowjoy@2018@tcp(172.16.255.26:30117)/espacs?charset=utf8
 Object:
   # 生成语音文件程序路径
   TTSPath: D:\\Go_Work\\src\\WowjoyProject\\WowjoyQueueCall\\TTS\\TTSCfg.exe
   # WAV文件路径(共享路径)
-  WAVFilePath: D:\\Go_Work\\src\\WowjoyProject\\WowjoyQueueCall\\WAVFile
+  WAVFilePath: D:\Go_Work\src\WowjoyProject\WowjoyQueueCall\WAVFile
   # WAV http 访问地址
   WAVURL: http://127.0.0.1:9091/WavFile/
+  # TTS 相关配置
+  # 设置语速语速
+  Rate: -3
+  # 设置音量
+  Volume: 200

@@ -26,6 +26,7 @@ type CallData struct {
 	CurCheckNumber   string        `json:"curCheckNumber"`   // 当前检查号
 	CurCheckType     string        `json:"curCheckType"`     // 当前检查类型
 	CurTypeName      string        `json:"curTypeName"`      // 当前就诊类型名
+	CurGreenFlag     string        `json:"curGreenFlag"`     // 当前绿色通道标志（是/否）
 	WaitePatienTotal int           `json:"waitePatienTotal"` // 等待患者总数
 	WaitePatienList  []WaitePatien `json:"waitePatienList"`  // 等待患者列表
 }
@@ -41,8 +42,10 @@ type ScreenShowData struct {
 }
 
 type WaitePatien struct {
-	WaitQueueNumber  string `json:"waitQueueNumber"`  // 等待患者排队号
+	WaitQueueNumber  string `json:"waiteQueueNumber"` // 等待患者排队号
 	WaitePatientName string `json:"waitePatientName"` // 等待患者姓名
+	WaiteTypeName    string `json:"waiteTypeName"`    // 等待患者就诊类型
+	WaiteGreenFlag   string `json:"waiteGreenFlag"`   // 等待患者绿色通道标志（是/否）
 }
 
 // 发送的科室的WebSocket数据
@@ -68,6 +71,15 @@ type WSMZMessage struct {
 	DataType int      `json:"dataType"` // 数据类型 0：放射科，1：超声科，2：内镜科，3：门诊
 	Data     CallData `json:"data"`     // 放射科数据
 }
+
+// 前端的log
+type WebLog struct {
+	Level int    `json:"level"` // log 等级
+	Msg   string `json:"msg"`   // log 消息
+}
+
+// 增加数据签到时间
+var ArriveTime string
 
 // 屏幕中的数据 [屏幕IP][][机房]
 var ScreenRoomTotalData map[string]map[string]CallData

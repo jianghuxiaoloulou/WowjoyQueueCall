@@ -3,6 +3,7 @@ package v1
 import (
 	"WowjoyProject/WowjoyQueueCall/global"
 	"WowjoyProject/WowjoyQueueCall/internal/model"
+	"WowjoyProject/WowjoyQueueCall/pkg/logger"
 	"WowjoyProject/WowjoyQueueCall/pkg/object"
 	"net/http"
 	"reflect"
@@ -19,7 +20,7 @@ func CallFile(c *gin.Context) {
 	var calldata global.CallData
 	c.ShouldBind(&calldata)
 	global.Logger.Debug(calldata)
-	// 查询科室配置信息
+	// // 查询科室配置信息
 	callPointInfo, err := model.QueryCheckRoomConfig(calldata.CurrRoom)
 	if err != nil {
 		c.JSON(http.StatusOK, gin.H{
@@ -28,6 +29,12 @@ func CallFile(c *gin.Context) {
 			"data":    callPointInfo,
 		})
 		return
+	}
+	// 当不存在等待患者时，不呼叫等待检查语音
+	if calldata.WaitePatienTotal == 0 {
+		index := strings.Index(callPointInfo.Call_Text, ";")
+		callPointInfo.Call_Text = callPointInfo.Call_Text[:index]
+		global.Logger.Debug("没有等待患者,截取呼叫内容", callPointInfo.Call_Text)
 	}
 	// 解析站点呼叫内容信息
 	callTextList := ParsStrToList(callPointInfo.Call_Text)
@@ -47,7 +54,9 @@ func CallFile(c *gin.Context) {
 		fileName += "\\"
 		fileName += calldata.CurCheckNumber
 		fileName += ".wav"
-		object.CallExeSaveWavFile(str, fileName)
+		// 生成语音文件
+		object.GetWavFile(str, fileName)
+		// object.CallExeSaveWavFile(str, fileName)
 		baseWav = global.ObjectSetting.WAVURL
 		baseWav += calldata.CurCheckNumber
 		baseWav += ".wav"
@@ -247,4 +256,37 @@ func HandGetPatientData(c *gin.Context) {
 		"message": "手动获取患者数据成功",
 		"data":    "",
 	})
+}
+
+// 记录weblog消息
+func InsWebLog(c *gin.Context) {
+	reqIP := c.ClientIP()
+	global.Logger.Debug("请求的主机IP: ", reqIP)
+	var logdata global.WebLog
+	c.ShouldBind(&logdata)
+	global.Logger.Debug(logdata)
+	go OutWebLog(reqIP, logdata)
+	c.JSON(http.StatusOK, gin.H{
+		"code":    0,
+		"message": "呼叫成功",
+	})
+}
+
+func OutWebLog(ip string, logdata global.WebLog) {
+	switch logdata.Level {
+	case int(logger.LevelDebug):
+		global.WebLogger.Debug(ip, ": ", logdata.Msg)
+	case int(logger.LevelInfo):
+		global.WebLogger.Info(ip, ": ", logdata.Msg)
+	case int(logger.LevelWarn):
+		global.WebLogger.Warn(ip, ": ", logdata.Msg)
+	case int(logger.LevelError):
+		global.WebLogger.Error(ip, ": ", logdata.Msg)
+	case int(logger.LevelFatal):
+		global.WebLogger.Fatal(ip, ": ", logdata.Msg)
+	case int(logger.LevelPanic):
+		global.WebLogger.Panic(ip, ": ", logdata.Msg)
+	default:
+		global.WebLogger.Debug(ip, ": ", logdata.Msg)
+	}
 }
